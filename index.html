@@ -6,6 +6,22 @@
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <script src="https://unpkg.com/aframe-chromakey-material/dist/aframe-chromakey-material.min.js"></script>
+
+    <script> const show = () => { document.querySelector("#everidea-clip").play(); }
+AFRAME.registerComponent('mytarget', {
+    init: function () {
+      this.el.addEventListener('targetFound', event => {
+        console.log("target found");
+        document.querySelector("#everidea-clip").play();
+      });
+      this.el.addEventListener('targetLost', event => {
+        console.log("target lost");
+        document.querySelector("#everidea-clip").pause();
+      });
+    }
+  });
+</script>
+
   </head>
   <body>
     <a-scene mindar-image="imageTargetSrc: ./assets/targets.mind" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" xr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
