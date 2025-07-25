@@ -2,7 +2,7 @@
 const { createFFmpeg, fetchFile } = FFmpeg;
 const ffmpeg = createFFmpeg({
     log: true, // PENTING: Untuk melihat log FFmpeg di konsol
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js' // Pastikan URL ini benar dan bisa diakses
+    corePath: 'https://unpkg.com/@ffmpeg/core@0.12.7/dist/ffmpeg-core.js' // Pastikan URL ini benar dan bisa diakses
 });
 
 let mediaRecorder;
