@@ -1,3 +1,7 @@
+// === DEBUG ALERT PALING AWAL: Pastikan file JS terload ===
+alert("DEBUG: record-handler.js dimuat.");
+// ========================================================
+
 const { createFFmpeg, fetchFile } = FFmpeg;
 const ffmpeg = createFFmpeg({
     log: true,
@@ -14,12 +18,23 @@ let recordingTimerInterval;
 const recordButton = document.getElementById('recordButton');
 const statusMessage = document.getElementById('statusMessage');
 
-// Fungsi bantuan untuk memastikan tombol selalu diaktifkan/dinonaktifkan dengan benar
+// === DEBUG ALERT: Pastikan elemen tombol ditemukan ===
+if (recordButton) {
+    alert("DEBUG: Tombol recordButton ditemukan di DOM.");
+} else {
+    alert("ERROR: recordButton TIDAK ditemukan di DOM. Periksa ID HTML atau DOM sudah siap.");
+}
+// ====================================================
+
 function setRecordButtonState(enabled, text) {
-    recordButton.disabled = !enabled;
-    recordButton.textContent = text;
-    if (enabled) {
-        recordButton.classList.remove('recording');
+    if (recordButton) {
+        recordButton.disabled = !enabled;
+        recordButton.textContent = text;
+        if (enabled) {
+            recordButton.classList.remove('recording');
+        } else {
+            recordButton.classList.remove('recording'); // Pastikan tidak ada class recording jika disable
+        }
     }
 }
 
@@ -58,23 +73,23 @@ async function loadFFmpeg() {
         try {
             await ffmpeg.load();
             showStatus("Pengonversi siap!", 2000);
-            setRecordButtonState(true, 'Tahan untuk Rekam'); // Aktifkan tombol setelah FFmpeg siap
+            setRecordButtonState(true, 'Tahan untuk Rekam');
         } catch (e) {
             console.error("Gagal memuat FFmpeg:", e);
-            alert("ALERT: Gagal memuat pengonversi video. Cek koneksi internet dan coba lagi."); // ALERT untuk error kritis
+            alert("ALERT: Gagal memuat pengonversi video. Cek koneksi internet dan coba lagi.");
             showStatus("Gagal memuat pengonversi video.", 5000);
-            setRecordButtonState(false, 'Error Memuat Konverter'); // Nonaktifkan tombol
+            setRecordButtonState(false, 'Error Memuat Konverter');
             return false;
         }
     } else {
-        setRecordButtonState(true, 'Tahan untuk Rekam'); // Aktifkan tombol jika sudah dimuat
+        setRecordButtonState(true, 'Tahan untuk Rekam');
     }
     return true;
 }
 
 async function startRecording() {
     // === DEBUG ALERT: Pastikan fungsi ini dipanggil ===
-    alert("DEBUG: startRecording() dipanggil."); 
+    alert("DEBUG: startRecording() dipanggil.");
     // =================================================
 
     if (isRecording) {
@@ -114,10 +129,9 @@ async function startRecording() {
     alert("DEBUG: MediaRecorder siap diinisialisasi.");
     // ======================================================
 
-    recordedChunks = []; // Reset chunks sebelum memulai
+    recordedChunks = [];
     try {
-        // Penting: Pastikan stream dari canvas dapat diakses dan tidak kosong
-        const stream = canvas.captureStream(30); 
+        const stream = canvas.captureStream(30);
         if (!stream || stream.getTracks().length === 0) {
             throw new Error("Canvas stream kosong atau tidak valid.");
         }
@@ -223,34 +237,36 @@ function resetRecordingState() {
     recordButton.classList.remove('recording');
     recordButton.textContent = 'Tahan untuk Rekam';
     clearInterval(recordingTimerInterval);
-    // Pastikan tombol aktif kembali
     setRecordButtonState(true, 'Tahan untuk Rekam'); 
 }
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Tombol nonaktif di awal sampai FFmpeg siap
     setRecordButtonState(false, 'Memuat...');
 
     if (recordButton) {
-        recordButton.addEventListener('mousedown', startRecording);
-        recordButton.addEventListener('mouseup', stopRecording);
+        // === PENTING: Menambahkan e.stopPropagation() ===
+        recordButton.addEventListener('mousedown', (e) => { e.stopPropagation(); startRecording(); });
+        recordButton.addEventListener('mouseup', (e) => { e.stopPropagation(); stopRecording(); });
 
         recordButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
+            e.preventDefault(); // Tetap diperlukan untuk mencegah default browser
+            e.stopPropagation(); // Mencegah event menyebar ke MindAR/A-Frame
             startRecording();
         }, { passive: false });
 
         recordButton.addEventListener('touchend', (e) => {
-            e.preventDefault();
+            e.preventDefault(); // Tetap diperlukan
+            e.stopPropagation(); // Mencegah event menyebar
             stopRecording();
         }, { passive: false });
+    } else {
+        alert("ERROR: recordButton tidak ditemukan saat DOMContentLoaded! Event listeners tidak terpasang.");
     }
 
     if (statusMessage) {
         showStatus("Memuat aplikasi...", null);
     }
 
-    // Panggil loadFFmpeg di sini untuk inisialisasi awal
     loadFFmpeg();
 });
