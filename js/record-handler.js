@@ -1,8 +1,8 @@
 // Deklarasikan instance FFmpeg
 const { createFFmpeg, fetchFile } = FFmpeg;
 const ffmpeg = createFFmpeg({
-    log: true, // Untuk melihat log FFmpeg di konsol
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js' // URL ke ffmpeg-core.js
+    log: true, // PENTING: Untuk melihat log FFmpeg di konsol
+    corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js' // Pastikan URL ini benar dan bisa diakses
 });
 
 let mediaRecorder;
@@ -48,15 +48,14 @@ function updateRecordingDuration() {
 
 // --- Fungsi Inisialisasi FFmpeg ---
 async function loadFFmpeg() {
-    if (!ffmpeg.is
-        ('loaded')) {
+    if (!ffmpeg.isLoaded()) { // Perbaikan: gunakan ffmpeg.isLoaded()
         showStatus("Memuat pengonversi video...", null);
         try {
             await ffmpeg.load();
             showStatus("Pengonversi siap!", 2000);
         } catch (e) {
             console.error("Gagal memuat FFmpeg:", e);
-            showStatus("Gagal memuat pengonversi video.", 5000);
+            showStatus("Gagal memuat pengonversi video. Coba refresh halaman.", 5000);
             recordButton.disabled = true; // Nonaktifkan tombol jika FFmpeg gagal dimuat
             return false;
         }
@@ -105,45 +104,49 @@ async function startRecording() {
         };
 
         mediaRecorder.onstop = async () => {
-            showStatus("Mengonversi video ke MP4...", null); // Pesan saat konversi
+            showStatus("Mengonversi video ke MP4...", null);
             const webmBlob = new Blob(recordedChunks, { type: supportedMimeType.split(';')[0] });
 
             try {
                 // Tulis file webm ke memori FFmpeg
-                await ffmpeg.writeFile('input.webm', await fetchFile(webmBlob));
+                // Nama file input di FS virtual FFmpeg
+                const inputFileName = 'input.webm';
+                await ffmpeg.writeFile(inputFileName, await fetchFile(webmBlob));
 
                 // Jalankan perintah konversi FFmpeg
-                // -i input.webm : input file
-                // -c:v libx264 : gunakan codec video H.264
-                // -preset medium : preset kualitas/kecepatan (ultrafast, superfast, fast, medium, slow, slower, veryslow)
-                // -crf 23 : Constant Rate Factor (kualitas, 0=lossless, 51=terburuk. 23 default umum)
-                // -pix_fmt yuv420p : format piksel, penting untuk kompatibilitas MP4
-                // output.mp4 : output file
+                // Pastikan nama file output ini sama dengan yang akan dibaca
+                const outputFileName = 'output.mp4';
                 await ffmpeg.exec([
-                    '-i', 'input.webm',
-                    '-c:v', 'libx264',
-                    '-preset', 'medium', // Bisa diubah ke 'fast' atau 'superfast' untuk konversi lebih cepat
+                    '-i', inputFileName,
+                    '-c:v', 'libx64', // Pastikan libx264 digunakan untuk H.264
+                    '-preset', 'medium',
                     '-crf', '23',
                     '-pix_fmt', 'yuv420p',
-                    'output.mp4'
+                    outputFileName
                 ]);
 
                 // Baca file mp4 yang sudah dikonversi
-                const data = await ffmpeg.readFile('output.mp4');
-                const mp4Blob = new Blob([data.buffer], { type: 'video/mp4' });
+                const data = await ffmpeg.readFile(outputFileName);
+                const mp4Blob = new Blob([data.buffer], { type: 'video/mp4' }); // PENTING: Tipe MIME di sini harus 'video/mp4'
+
+                // PENTING: Debugging - Periksa ukuran blob MP4
+                console.log('MP4 Blob created:', mp4Blob.size, 'bytes');
+                if (mp4Blob.size === 0) {
+                    throw new Error("FFmpeg menghasilkan file MP4 kosong.");
+                }
 
                 const url = URL.createObjectURL(mp4Blob);
                 const a = document.createElement('a');
                 document.body.appendChild(a);
                 a.style.display = 'none';
                 a.href = url;
-                a.download = `aframe_recording_${Date.now()}.mp4`; // Ubah ekstensi
+                a.download = `aframe_recording_${Date.now()}.mp4`; // PENTING: Pastikan ekstensi .mp4 di sini
                 a.click();
                 window.URL.revokeObjectURL(url);
 
                 // Bersihkan file dari memori FFmpeg
-                await ffmpeg.deleteFile('input.webm');
-                await ffmpeg.deleteFile('output.mp4');
+                await ffmpeg.deleteFile(inputFileName);
+                await ffmpeg.deleteFile(outputFileName);
 
                 recordedChunks = [];
                 isRecording = false;
@@ -153,7 +156,7 @@ async function startRecording() {
                 clearInterval(recordingTimerInterval);
             } catch (ffmpegErr) {
                 console.error("Gagal mengonversi video dengan FFmpeg:", ffmpegErr);
-                showStatus("Gagal mengonversi video ke MP4.", 5000);
+                showStatus(`Gagal mengonversi video ke MP4. Error: ${ffmpegErr.message}`, 5000);
                 isRecording = false;
                 recordButton.classList.remove('recording');
                 recordButton.textContent = 'Tahan untuk Rekam';
