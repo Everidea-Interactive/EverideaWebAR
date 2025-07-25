@@ -22,6 +22,47 @@ AFRAME.registerComponent('mytarget', {
   });
 </script>
 
+ <style>
+        body { margin: 0; overflow: hidden; font-family: sans-serif; }
+        #recordButton {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px; /* Ukuran lebih besar agar mudah di-tap */
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 9999;
+            border: none;
+            border-radius: 50px; /* Bentuk lingkaran atau oval */
+            background-color: #e74c3c; /* Warna merah untuk merekam */
+            color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        #recordButton:active {
+            background-color: #c0392b; /* Warna lebih gelap saat ditekan */
+            transform: translateX(-50%) scale(0.98);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        #recordButton.recording {
+            background-color: #2ecc71; /* Warna hijau saat merekam */
+        }
+        #statusMessage {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            z-index: 9998;
+            font-size: 1em;
+            display: none; /* Sembunyikan secara default */
+        }
+    </style>
+
   </head>
   <body>
     <a-scene mindar-image="imageTargetSrc: ./assets/targets.mind" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" xr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
@@ -37,5 +78,11 @@ AFRAME.registerComponent('mytarget', {
        <a-video src="#everidea-clip" width="1" height="1.5" chromakey-material="color: #00ff00; opacity: 1;"></a-video>
       </a-entity>
     </a-scene>
+
+     <button id="recordButton">Tahan untuk Rekam</button>
+    <div id="statusMessage">Siap Merekam</div>
+
+    <script src="js/record-handler.js"></script>
+
   </body>
 </html>
