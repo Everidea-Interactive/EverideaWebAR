@@ -5,7 +5,6 @@ alert("DEBUG: record-handler.js dimuat.");
 const { createFFmpeg, fetchFile } = FFmpeg;
 const ffmpeg = createFFmpeg({
     log: true,
-    // Pastikan corePath ini sesuai dengan versi @ffmpeg/ffmpeg yang di-load di index.html
     corePath: 'https://unpkg.com/@ffmpeg/core@0.12.7/dist/ffmpeg-core.js'
 });
 
@@ -15,29 +14,41 @@ let isRecording = false;
 let startTime;
 let recordingTimerInterval;
 
-const recordButton = document.getElementById('recordButton');
-const statusMessage = document.getElementById('statusMessage');
+// Variabel ini akan dideklarasikan ulang di dalam DOMContentLoaded
+let recordButton; 
+let statusMessage; 
 
-// === DEBUG ALERT: Pastikan elemen tombol ditemukan ===
-if (recordButton) {
-    alert("DEBUG: Tombol recordButton ditemukan di DOM.");
-} else {
-    alert("ERROR: recordButton TIDAK ditemukan di DOM. Periksa ID HTML atau DOM sudah siap.");
-}
-// ====================================================
+// Fungsi-fungsi bantuan (setRecordButtonState, getSupportedMimeType, showStatus, updateRecordingDuration)
+// Perhatikan: fungsi-fungsi ini akan perlu akses ke recordButton dan statusMessage.
+// Kita akan pastikan itu di dalam DOMContentLoaded
 
 function setRecordButtonState(enabled, text) {
-    if (recordButton) {
+    // Pastikan recordButton sudah ada (sudah ditemukan di DOM)
+    if (recordButton) { 
         recordButton.disabled = !enabled;
         recordButton.textContent = text;
         if (enabled) {
             recordButton.classList.remove('recording');
         } else {
-            recordButton.classList.remove('recording'); // Pastikan tidak ada class recording jika disable
+            recordButton.classList.remove('recording');
         }
     }
 }
 
+function showStatus(message, duration = null) {
+    // Pastikan statusMessage sudah ada (sudah ditemukan di DOM)
+    if (statusMessage) { 
+        statusMessage.textContent = message;
+        statusMessage.style.display = 'block';
+        if (duration) {
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, duration);
+        }
+    }
+}
+
+// ... (lanjutkan dengan fungsi getSupportedMimeType dan updateRecordingDuration seperti sebelumnya) ...
 function getSupportedMimeType() {
     const mimeTypes = [
         'video/webm; codecs=vp9',
@@ -52,21 +63,13 @@ function getSupportedMimeType() {
     return null;
 }
 
-function showStatus(message, duration = null) {
-    statusMessage.textContent = message;
-    statusMessage.style.display = 'block';
-    if (duration) {
-        setTimeout(() => {
-            statusMessage.style.display = 'none';
-        }, duration);
-    }
-}
-
 function updateRecordingDuration() {
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
     showStatus(`Merekam... ${elapsed}s`);
 }
 
+
+// ... (lanjutkan dengan fungsi loadFFmpeg, startRecording, stopRecording, resetRecordingState seperti sebelumnya) ...
 async function loadFFmpeg() {
     if (!ffmpeg.isLoaded()) {
         showStatus("Memuat pengonversi video, harap tunggu...", null);
@@ -88,9 +91,7 @@ async function loadFFmpeg() {
 }
 
 async function startRecording() {
-    // === DEBUG ALERT: Pastikan fungsi ini dipanggil ===
     alert("DEBUG: startRecording() dipanggil.");
-    // =================================================
 
     if (isRecording) {
         alert("DEBUG: Sudah merekam, mengabaikan perintah start.");
@@ -125,13 +126,11 @@ async function startRecording() {
         return;
     }
     
-    // === DEBUG ALERT: MediaRecorder siap diinisialisasi ===
     alert("DEBUG: MediaRecorder siap diinisialisasi.");
-    // ======================================================
 
     recordedChunks = [];
     try {
-        const stream = canvas.captureStream(30);
+        const stream = canvas.captureStream(30); 
         if (!stream || stream.getTracks().length === 0) {
             throw new Error("Canvas stream kosong atau tidak valid.");
         }
@@ -242,26 +241,39 @@ function resetRecordingState() {
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    alert("DEBUG: DOMContentLoaded terpicu."); // Debugging DOMContentLoaded
+
+    // Ambil elemen tombol di sini, setelah DOMContentLoaded
+    recordButton = document.getElementById('recordButton');
+    statusMessage = document.getElementById('statusMessage');
+
+    // === DEBUG ALERT: Pastikan elemen tombol ditemukan setelah DOMContentLoaded ===
+    if (recordButton) {
+        alert("DEBUG: Tombol recordButton ditemukan di DOM (setelah DOMContentLoaded).");
+    } else {
+        alert("ERROR: recordButton TIDAK ditemukan di DOM (setelah DOMContentLoaded)! Periksa ID HTML.");
+    }
+    // =========================================================================
+
     setRecordButtonState(false, 'Memuat...');
 
     if (recordButton) {
-        // === PENTING: Menambahkan e.stopPropagation() ===
         recordButton.addEventListener('mousedown', (e) => { e.stopPropagation(); startRecording(); });
         recordButton.addEventListener('mouseup', (e) => { e.stopPropagation(); stopRecording(); });
 
         recordButton.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Tetap diperlukan untuk mencegah default browser
-            e.stopPropagation(); // Mencegah event menyebar ke MindAR/A-Frame
+            e.preventDefault();
+            e.stopPropagation();
             startRecording();
         }, { passive: false });
 
         recordButton.addEventListener('touchend', (e) => {
-            e.preventDefault(); // Tetap diperlukan
-            e.stopPropagation(); // Mencegah event menyebar
+            e.preventDefault();
+            e.stopPropagation();
             stopRecording();
         }, { passive: false });
     } else {
-        alert("ERROR: recordButton tidak ditemukan saat DOMContentLoaded! Event listeners tidak terpasang.");
+        alert("ERROR: recordButton tidak ditemukan. Event listeners tidak terpasang.");
     }
 
     if (statusMessage) {
