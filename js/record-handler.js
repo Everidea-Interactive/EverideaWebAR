@@ -4,7 +4,6 @@ alert("DEBUG: record-handler.js dimuat.");
 const { createFFmpeg, fetchFile } = FFmpeg;
 const ffmpeg = createFFmpeg({
     log: true,
-    // Pastikan corePath ini sinkron dengan versi @ffmpeg/ffmpeg yang di-load di index.html
     corePath: 'https://unpkg.com/@ffmpeg/core@0.12.7/dist/ffmpeg-core.js'
 });
 
@@ -81,9 +80,8 @@ async function loadFFmpeg() {
 }
 
 async function startRecording() {
-    // === DEBUG ALERT PENTING: Periksa apakah ini muncul ===
-    alert("DEBUG: startRecording() dipanggil.");
-
+    alert("DEBUG: startRecording() dipanggil."); // Debug alert
+    
     if (isRecording) {
         alert("DEBUG: Sudah merekam, mengabaikan perintah start.");
         return;
@@ -117,7 +115,6 @@ async function startRecording() {
         return;
     }
     
-    // DEBUG ALERT: MediaRecorder siap diinisialisasi
     alert("DEBUG: MediaRecorder siap diinisialisasi.");
 
     recordedChunks = [];
@@ -242,20 +239,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setRecordButtonState(false, 'Memuat...');
 
+    // === PERUBAHAN BESAR: Menggunakan event listener di document.body ===
     if (recordButton) {
-        recordButton.addEventListener('mousedown', (e) => { e.stopPropagation(); startRecording(); });
-        recordButton.addEventListener('mouseup', (e) => { e.stopPropagation(); stopRecording(); });
+        document.body.addEventListener('mousedown', (e) => {
+            // Cek apakah event terjadi pada recordButton atau anaknya
+            if (e.target === recordButton || recordButton.contains(e.target)) {
+                e.stopPropagation();
+                startRecording();
+            }
+        });
+        document.body.addEventListener('mouseup', (e) => {
+            if (e.target === recordButton || recordButton.contains(e.target)) {
+                e.stopPropagation();
+                stopRecording();
+            }
+        });
 
-        recordButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            startRecording();
+        document.body.addEventListener('touchstart', (e) => {
+            if (e.target === recordButton || recordButton.contains(e.target)) {
+                e.preventDefault(); // Tetap diperlukan untuk mencegah default browser
+                e.stopPropagation(); // Mencegah event menyebar
+                startRecording();
+            }
         }, { passive: false });
 
-        recordButton.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            stopRecording();
+        document.body.addEventListener('touchend', (e) => {
+            if (e.target === recordButton || recordButton.contains(e.target)) {
+                e.preventDefault(); // Tetap diperlukan
+                e.stopPropagation(); // Mencegah event menyebar
+                stopRecording();
+            }
         }, { passive: false });
     } else {
         alert("ERROR: recordButton tidak ditemukan. Event listeners tidak terpasang.");
